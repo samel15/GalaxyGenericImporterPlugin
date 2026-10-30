@@ -211,25 +211,24 @@ class ListGames():
         self.continue_monitoring = False
     
     def watcher_update(self, path_to_watch, my_queue_folder_awaiting_scan):
-        """Poll directory contents for changes without platform-specific extensions."""
+        """Watch directory changes via portable polling, with a short shutdown delay."""
         import time
+
         def fingerprint():
-            try:
-                items = []
-                for directory, dirs, files in os.walk(path_to_watch):
-                    for name in files:
-                        path = os.path.join(directory, name)
-                        try:
-                            stat = os.stat(path)
-                            items.append((path, stat.st_mtime_ns, stat.st_size))
-                        except OSError:
-                            continue
-                return tuple(sorted(items))
-            except OSError:
-                return ()
+            items = []
+            for directory, dirs, files in os.walk(path_to_watch):
+                for name in files:
+                    path = os.path.join(directory, name)
+                    try:
+                        stat = os.stat(path)
+                        items.append((path, stat.st_mtime_ns, stat.st_size))
+                    except OSError:
+                        continue
+            return tuple(sorted(items))
+
         previous = fingerprint()
         while self.continue_monitoring:
-            time.sleep(2)
+            time.sleep(10)
             current = fingerprint()
             if current != previous:
                 previous = current
