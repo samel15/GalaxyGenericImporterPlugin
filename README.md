@@ -414,3 +414,7 @@ Run coverage tests
 
 ![Python package](https://github.com/AndrewDWhite/GalaxyGenericImporterPlugin/workflows/Python%20package/badge.svg?branch=master)
 [![CodeQL](https://github.com/AndrewDWhite/GalaxyGenericImporterPlugin/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/AndrewDWhite/GalaxyGenericImporterPlugin/actions/workflows/codeql-analysis.yml)
+
+## Compatibility note (community patch)
+
+Modern GOG Galaxy can run Python 3.12+; the old `imp` module and bundled pywin32 extensions are incompatible. This branch replaces Windows change notifications with portable polling (2-second interval). Polling on large ROM trees can be slower than native notifications; test on your library before use. For Galaxy API handshake compatibility install `galaxy.plugin.api>=0.70` as an updated dependency and package it in a new release. The bundled 2022 zip still needs rebuilding; this source patch alone does not update its vendored API.
