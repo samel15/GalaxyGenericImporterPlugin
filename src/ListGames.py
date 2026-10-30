@@ -61,6 +61,9 @@ class ListGames():
         logging.debug("loading emulators configuration completed")
         logging.debug(len(self.loaded_systems_configuration))
         self.continue_monitoring = True
+        self._monitor_stop_event = threading.Event()
+        self._monitor_lock = threading.Lock()
+        self.monitor_poll_interval = 10
         self.my_folder_monitor_threads = []
     
     def write_to_cache(self, data):
@@ -208,11 +211,12 @@ class ListGames():
     
     def disable_monitoring(self):
         logging.debug("disabling monitoring")
-        self.continue_monitoring = False
+        with self._monitor_lock:
+            self.continue_monitoring = False
+            self._monitor_stop_event.set()
     
     def watcher_update(self, path_to_watch, my_queue_folder_awaiting_scan):
-        """Watch directory changes via portable polling, with a short shutdown delay."""
-        import time
+        """Watch directory changes via portable polling until stopped."""
 
         def fingerprint():
             items = []
@@ -228,11 +232,17 @@ class ListGames():
 
         previous = fingerprint()
         while self.continue_monitoring:
-            time.sleep(10)
+            if self._monitor_stop_event.wait(self.monitor_poll_interval):
+                break
+            if not self.continue_monitoring:
+                break
             current = fingerprint()
-            if current != previous:
-                previous = current
-                my_queue_folder_awaiting_scan.put(path_to_watch)
+            with self._monitor_lock:
+                if not self.continue_monitoring:
+                    break
+                if current != previous:
+                    previous = current
+                    my_queue_folder_awaiting_scan.put(path_to_watch)
 
     async def shutdown_folder_listeners(self):
         logging.debug("shutdown folder listeners")
